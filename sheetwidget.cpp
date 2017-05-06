@@ -1,25 +1,25 @@
 /**
    Copyright 2017 Shawn Gilroy
 
-   This file is part of Discounting Model Selector, Qt port.
+   This file is part of Tau-U Calculator, Qt port.
 
-   Discounting Model Selector is free software: you can redistribute it and/or modify
+   Tau-U Calculator is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, version 3.
 
-   Discounting Model Selector is distributed in the hope that it will be useful,
+   Tau-U Calculator is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with Discounting Model Selector.  If not, see http://www.gnu.org/licenses/.
+   along with Tau-U Calculator.  If not, see http://www.gnu.org/licenses/.
 
-   The Discounting Model Selector is a tool to assist researchers in behavior economics.
+   The Tau-U Calculator is a tool to assist researchers in behavior economics.
 
    Email: shawn(dot)gilroy(at)temple.edu
 
-   The SheetWidget class was inspired by the Qt 5.8 Spreadsheet example, its license is below:
+   The SheetWidget class was inspired by the Qt 5.8 Spreadsheet example and Recent Files example, its license is below:
 
    =======================================================================================================
 
@@ -69,20 +69,26 @@
   */
 
 #include <QtWidgets>
-#include <QtXlsx>
 #include <QTableWidgetItem>
+#include <QtXlsx>
+#include <QtCharts>
 
 #include "sheetwidget.h"
 #include "resultsdialog.h"
-#include "statusdialog.h"
+#include "taudialog.h"
+#include "tauumodel.h"
+#include "tauucalculations.h"
+
+#include <QDebug>
 
 QTXLSX_USE_NAMESPACE
 
-SheetWidget::SheetWidget(bool rInstalled, QString commandString, QWidget *parent) : QMainWindow(parent)
+/**
+ * @brief SheetWidget::SheetWidget
+ * @param parent
+ */
+SheetWidget::SheetWidget(QWidget *parent) : QMainWindow(parent)
 {
-    isCoreRPresent = rInstalled;
-    commandParameter = commandString;
-
     table = new QTableWidget(10000, 10000, this);
     table->setSizeAdjustPolicy(QTableWidget::AdjustToContents);
 
@@ -90,19 +96,36 @@ SheetWidget::SheetWidget(bool rInstalled, QString commandString, QWidget *parent
 
     for (int c = 0; c < 10000; ++c)
     {
-        value = "";
-        convertExcelColumn(value, c);
-        table->setHorizontalHeaderItem(c, new QTableWidgetItem(value));
+        if (c == 0)
+        {
+            table->setHorizontalHeaderItem(0, new QTableWidgetItem("Study Tag"));
+        }
+        else if (c == 1)
+        {
+            table->setHorizontalHeaderItem(1, new QTableWidgetItem("Subject Tag"));
+        }
+        else if (c == 2)
+        {
+            table->setHorizontalHeaderItem(2, new QTableWidgetItem("Phase Tag"));
+        }
+        else
+        {
+            value = "";
+            convertExcelColumn(value, c - 3);
+            table->setHorizontalHeaderItem(c, new QTableWidgetItem(value));
+        }
     }
 
     buildMenus();
     setCentralWidget(table);
 
-    setWindowTitle("Discounting Model Selector");
+    setWindowTitle("Tau-U Calculator v 1.0.0.0");
 
     this->layout()->setSizeConstraint(QLayout::SetNoConstraint);
 
     resize(QDesktopWidget().availableGeometry(this).size() * 0.7);
+
+    #ifdef _WIN32
 
     this->window()->setGeometry(
         QStyle::alignedRect(
@@ -113,33 +136,213 @@ SheetWidget::SheetWidget(bool rInstalled, QString commandString, QWidget *parent
         )
     );
 
-    QString cwd = QDir::currentPath();
+    #endif
 
-    if (!QDir(cwd).exists("FranckComputation.R"))
-    {
-        QFile::copy(":/scripts/FranckComputation.R", cwd + "/FranckComputation.R");
-    }
-
-    if (!QDir(cwd).exists("installDependencyBase64.R"))
-    {
-        QFile::copy(":/scripts/installDependencyBase64.R", cwd + "/installDependencyBase64.R");
-    }
-
-    if (!QDir(cwd).exists("installDependencyJsonlite.R"))
-    {
-        QFile::copy(":/scripts/installDependencyJsonlite.R", cwd + "/installDependencyJsonlite.R");
-    }
-
-    if (!QDir(cwd).exists("installDependencyReshape.R"))
-    {
-        QFile::copy(":/scripts/installDependencyReshape.R", cwd + "/installDependencyReshape.R");
-    }
-
-    statusDialog = new StatusDialog(isCoreRPresent, commandParameter, this);
-    statusDialog->setModal(true);
-    statusDialog->show();
+    table->installEventFilter(this);
 }
 
+/**
+ * @brief SheetWidget::LaunchStudySeriesFigure
+ * @param mTauList
+ * @param mOmnibus
+ */
+void SheetWidget::LaunchStudySeriesFigure(QList<TauUModel> mTauList, TauUModel mOmnibus)
+{
+    chart = new QChart();
+    chart->legend()->hide();
+    chart->setTitle("Study-level and Omnibus Tau-U Metrics");
+
+    axisX = new QValueAxis;
+    axisX->gridLineColor();
+    axisX->setTickCount(5);
+    axisX->setMin(-2.0);
+    axisX->setMax(2.0);
+    axisX->setLinePenColor(Qt::black);
+    axisX->setLinePen(QPen(Qt::black));
+    axisY = new QCategoryAxis;
+
+    int mCounter = 1;
+
+    axisY->append("Omnibus", mCounter);
+
+    for (int i = mTauList.count() - 1; i >= 0; i--)
+    {
+        axisY->append(mTauList[i].StudyName, mCounter + 1);
+        mCounter++;
+    }
+
+    axisY->setRange(0, mTauList.count() + 1);
+    axisY->setMin(0);
+    axisY->setMax(mTauList.count() + 1);
+    axisY->setLinePenColor(Qt::white);
+    axisY->setLinePen(QPen(Qt::white));
+
+    axisX->setGridLineVisible(false);
+    axisY->setGridLineVisible(false);
+
+    double mHeight = ((double) mCounter) + 0.5;
+
+    int lowestNumber = 99999999;
+
+    foreach(TauUModel tau, mTauList)
+    {
+        if (tau.Pairs < lowestNumber)
+        {
+            lowestNumber = tau.Pairs;
+        }
+    }
+
+    foreach(TauUModel tau, mTauList)
+    {
+        mHeight -= 1;
+
+        LoadIndividualDataIntoChart(mHeight, tau.CI[0], tau.TAU, tau.CI[1], tau.Pairs, lowestNumber);
+    }
+
+    mHeight -= 1;
+
+    LoadIndividualDataIntoChart(mHeight, mOmnibus.CI[0], mOmnibus.TAU, mOmnibus.CI[1], 99999, lowestNumber);
+
+    QChartView *chartView = new QChartView(chart);
+    chartView->setRenderHint(QPainter::Antialiasing);
+
+    QMainWindow *window = new QMainWindow(this);
+    window->setWindowTitle("Study-level and Omnibus Tau-U");
+    window->setCentralWidget(chartView);
+    window->resize(800, 600);
+    window->show();
+}
+
+/**
+ * @brief SheetWidget::LaunchIndividualSeriesFigure
+ * @param mTauList
+ * @param mOmnibus
+ */
+void SheetWidget::LaunchIndividualSeriesFigure(QList<TauUModel> mTauList, TauUModel mOmnibus)
+{
+    chart = new QChart();
+    chart->legend()->hide();
+    chart->setTitle("Individual and Omnibus Tau-U Metrics");
+
+    axisX = new QValueAxis;
+    axisX->gridLineColor();
+    axisX->setTickCount(5);
+    axisX->setMin(-2.0);
+    axisX->setMax(2.0);
+    axisX->setLinePenColor(Qt::black);
+    axisX->setLinePen(QPen(Qt::black));
+    axisY = new QCategoryAxis;
+
+    int mCounter = 1;
+
+    axisY->append("Omnibus", mCounter);
+
+    for (int i = mTauList.count() - 1; i >= 0; i--)
+    {
+        axisY->append(mTauList[i].StudyName + ": " + mTauList[i].ParticipantName, mCounter + 1);
+        mCounter++;
+    }
+
+    axisY->setRange(0, mTauList.count() + 1);
+    axisY->setMin(0);
+    axisY->setMax(mTauList.count() + 1);
+    axisY->setLinePenColor(Qt::white);
+    axisY->setLinePen(QPen(Qt::white));
+
+    axisX->setGridLineVisible(false);
+    axisY->setGridLineVisible(false);
+
+    double mHeight = ((double) mCounter) + 0.5;
+
+    int lowestNumber = 99999999;
+
+    foreach(TauUModel tau, mTauList)
+    {
+        if (tau.Pairs < lowestNumber)
+        {
+            lowestNumber = tau.Pairs;
+        }
+    }
+
+    foreach(TauUModel tau, mTauList)
+    {
+        mHeight -= 1;
+        LoadIndividualDataIntoChart(mHeight, tau.CI[0], tau.TAU, tau.CI[1], tau.Pairs, lowestNumber);
+    }
+
+    mHeight -= 1;
+
+    LoadIndividualDataIntoChart(mHeight, mOmnibus.CI[0], mOmnibus.TAU, mOmnibus.CI[1], 99999, lowestNumber);
+
+    QChartView *chartView = new QChartView(chart);
+    chartView->setRenderHint(QPainter::Antialiasing);
+
+    QMainWindow *window = new QMainWindow(this);
+    window->setWindowTitle("Individual and Omnibus Tau-U");
+    window->setCentralWidget(chartView);
+    window->resize(800, 600);
+    window->show();
+}
+
+/**
+ * @brief SheetWidget::LoadIndividualDataIntoChart
+ * @param y
+ * @param x1
+ * @param x2
+ * @param x3
+ * @param pairs
+ * @param lowestPairs
+ */
+void SheetWidget::LoadIndividualDataIntoChart(double y, double x1, double x2, double x3, int pairs, int lowestPairs)
+{
+    if (pairs == 99999)
+    {
+        QLineSeries *series = new QLineSeries();
+        series->setPen(QPen(Qt::black));
+        chart->addSeries(series);
+        *series << QPointF(x1, y) <<
+                   QPointF(x2, y + 0.2) <<
+                   QPointF(x3, y) <<
+                   QPointF(x2, y - 0.2) <<
+                   QPointF(x1, y);
+
+
+        chart->setAxisX(axisX, series);
+        chart->setAxisY(axisY, series);
+    }
+    else
+    {
+        int weight = qExp(qLn(10) + qLn((double) (pairs / lowestPairs)));
+
+        QScatterSeries *series0 = new QScatterSeries();
+        series0->setName("point");
+        series0->setMarkerShape(QScatterSeries::MarkerShapeRectangle);
+        series0->setMarkerSize(weight);
+        series0->setPen(QPen(Qt::black));
+        series0->setBrush(QBrush(Qt::black));
+        chart->addSeries(series0);
+
+        series0->append(x2, y);
+
+        chart->setAxisX(axisX, series0);
+        chart->setAxisY(axisY, series0);
+
+        QLineSeries *series = new QLineSeries();
+        series->setPen(QPen(Qt::black));
+        chart->addSeries(series);
+        *series << QPointF(x1, y) << QPointF(x1, y + 0.05) << QPointF(x1, y - 0.05) << QPointF(x1, y) <<
+                   QPointF(x2, y) <<
+                   QPointF(x3, y) << QPointF(x3, y + 0.05) << QPointF(x3, y - 0.05) << QPointF(x3, y);
+
+
+        chart->setAxisX(axisX, series);
+        chart->setAxisY(axisY, series);
+    }
+}
+
+/**
+ * @brief SheetWidget::buildMenus
+ */
 void SheetWidget::buildMenus()
 {
     /** File actions
@@ -169,9 +372,9 @@ void SheetWidget::buildMenus()
      * @brief
      */
 
-    openAnalysisWindow = new QAction("O&pen Modeling", this);
-    openAnalysisWindow->setIcon(QIcon(":/images/applications-other.png"));
-    connect(openAnalysisWindow, &QAction::triggered, this, &SheetWidget::showAnalysisWindow);
+    openTauUWindow = new QAction("C&alculate Tau-U", this);
+    openTauUWindow->setIcon(QIcon(":/images/applications-other.png"));
+    connect(openTauUWindow, &QAction::triggered, this, &SheetWidget::showTauUWindow);
 
     /** Edit actions
      * @brief
@@ -192,6 +395,11 @@ void SheetWidget::buildMenus()
     pasteAction->setIcon(QIcon(":/images/edit-paste.png"));
     connect(pasteAction, &QAction::triggered, this, &SheetWidget::paste);
 
+    pasteInvertedAction = new QAction("Paste Transposed", this);
+    pasteInvertedAction->setShortcut(QKeySequence("Ctrl+B"));
+    pasteInvertedAction->setIcon(QIcon(":/images/edit-paste.png"));
+    connect(pasteInvertedAction, &QAction::triggered, this, &SheetWidget::pasteInverted);
+
     clearAction = new QAction("Clear", this);
     clearAction->setShortcut(Qt::Key_Delete);
     clearAction->setIcon(QIcon(":/images/edit-clear.png"));
@@ -200,36 +408,6 @@ void SheetWidget::buildMenus()
     /** Window actions
      * @brief
      */
-
-    modelSelectDialog = new ModelSelectionDialog(this);
-
-    openLicenseDMS = new QAction("DMS License (GPL-V3)", this);
-    openLicenseDMS->setIcon(QIcon(":/images/text-x-generic.png"));
-    connect(openLicenseDMS, &QAction::triggered, this, &SheetWidget::showDMSLicenseWindow);
-
-    openLicenseR = new QAction("R License (GPL-V3)", this);
-    openLicenseR->setIcon(QIcon(":/images/text-x-generic.png"));
-    connect(openLicenseR, &QAction::triggered, this, &SheetWidget::showRLicenseWindow);
-
-    openLicenseNls = new QAction("nls License (GPL-V3)", this);
-    openLicenseNls->setIcon(QIcon(":/images/text-x-generic.png"));
-    connect(openLicenseNls, &QAction::triggered, this, &SheetWidget::showNLSLicenseWindow);
-
-    openLicenseBase64 = new QAction("base64enc License (GPL-V3)", this);
-    openLicenseBase64->setIcon(QIcon(":/images/text-x-generic.png"));
-    connect(openLicenseBase64, &QAction::triggered, this, &SheetWidget::showBase64LicenseWindow);
-
-    openLicenseJsonlite = new QAction("jsonlite License (MIT)", this);
-    openLicenseJsonlite->setIcon(QIcon(":/images/text-x-generic.png"));
-    connect(openLicenseJsonlite, &QAction::triggered, this, &SheetWidget::showJsonliteLicenseWindow);
-
-    openLicenseReshape = new QAction("reshape License (MIT)", this);
-    openLicenseReshape->setIcon(QIcon(":/images/text-x-generic.png"));
-    connect(openLicenseReshape, &QAction::triggered, this, &SheetWidget::showReshapeLicenseWindow);
-
-    openLicenseBDS = new QAction("DMS License (GPL-V3)", this);
-    openLicenseBDS->setIcon(QIcon(":/images/text-x-generic.png"));
-    connect(openLicenseBDS, &QAction::triggered, this, &SheetWidget::showBDSLicenseWindow);
 
     openLicenseQt = new QAction("Qt License (LGPL-V3)", this);
     openLicenseQt->setIcon(QIcon(":/images/text-x-generic.png"));
@@ -251,17 +429,11 @@ void SheetWidget::buildMenus()
      * @brief
      */
 
-    delayAction = new QAction("Set Delays", this);
-    delayAction->setIcon(QIcon(":/images/system-run.png"));
-    connect(delayAction, &QAction::triggered, this, &SheetWidget::updateDelayModalWindow);
-
-    valueAction = new QAction("Set Values", this);
-    valueAction->setIcon(QIcon(":/images/system-run.png"));
-    connect(valueAction, &QAction::triggered, this, &SheetWidget::updateValueModalWindow);
-
-    maxValueAction = new QAction("Set Max Value", this);
-    maxValueAction->setIcon(QIcon(":/images/system-run.png"));
-    connect(maxValueAction, &QAction::triggered, this, &SheetWidget::updateMaxValueModalWindow);
+    for (int i = 0; i < MaxRecentFiles; ++i) {
+        recentFileActs[i] = new QAction(this);
+        recentFileActs[i]->setVisible(false);
+        connect(recentFileActs[i], SIGNAL(triggered()), this, SLOT(openRecentFile()));
+    }
 
     /** Menu area below
      * @brief
@@ -271,26 +443,32 @@ void SheetWidget::buildMenus()
     sheetOptionsMenu->addAction(newSheetAction);
     sheetOptionsMenu->addAction(openSheetAction);
     sheetOptionsMenu->addAction(saveSheetAction);
+
+    separatorAct = sheetOptionsMenu->addSeparator();
+
+    for (int i = 0; i < MaxRecentFiles; ++i)
+    {
+        sheetOptionsMenu->addAction(recentFileActs[i]);
+    }
+
+    sheetOptionsMenu->addSeparator();
+
     sheetOptionsMenu->addAction(exitSheetAction);
+
+    updateRecentFileActions();
 
     QMenu *sheetEditMenu = menuBar()->addMenu(tr("&Edit"));
     sheetEditMenu->addAction(cutAction);
     sheetEditMenu->addAction(copyAction);
     sheetEditMenu->addAction(pasteAction);
+    sheetEditMenu->addAction(pasteInvertedAction);
     sheetEditMenu->addSeparator();
     sheetEditMenu->addAction(clearAction);
 
-    QMenu *sheetCalculationsMenu = menuBar()->addMenu(tr("&Analyses"));
-    sheetCalculationsMenu->addAction(openAnalysisWindow);
+    QMenu *sheetCalculationsMenu = menuBar()->addMenu(tr("C&alculations"));
+    sheetCalculationsMenu->addAction(openTauUWindow);
 
     QMenu *sheetLicensesMenu = menuBar()->addMenu(tr("&Licenses"));
-    sheetLicensesMenu->addAction(openLicenseDMS);
-    sheetLicensesMenu->addAction(openLicenseR);
-    sheetLicensesMenu->addAction(openLicenseNls);
-    sheetLicensesMenu->addAction(openLicenseBase64);
-    sheetLicensesMenu->addAction(openLicenseJsonlite);
-    sheetLicensesMenu->addAction(openLicenseReshape);
-    sheetLicensesMenu->addAction(openLicenseBDS);
     sheetLicensesMenu->addAction(openLicenseQt);
     sheetLicensesMenu->addAction(openLicenseGnome);
     sheetLicensesMenu->addAction(openAbout);
@@ -302,16 +480,6 @@ void SheetWidget::buildMenus()
      * @brief
      */
 
-    addAction(openAnalysisWindow);
-
-    QAction *separatorOne = new QAction(this);
-    separatorOne->setSeparator(true);
-    addAction(separatorOne);
-
-    addAction(delayAction);
-    addAction(valueAction);
-    addAction(maxValueAction);
-
     QAction *separatorTwo = new QAction(this);
     separatorTwo->setSeparator(true);
     addAction(separatorTwo);
@@ -319,6 +487,7 @@ void SheetWidget::buildMenus()
     addAction(cutAction);
     addAction(copyAction);
     addAction(pasteAction);
+    addAction(pasteInvertedAction);
 
     QAction *separatorThree = new QAction(this);
     separatorThree->setSeparator(true);
@@ -328,22 +497,178 @@ void SheetWidget::buildMenus()
     setContextMenuPolicy(Qt::ActionsContextMenu);
 }
 
+/**
+ * @brief SheetWidget::clearSheet
+ */
 void SheetWidget::clearSheet()
 {
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+
     table->clearContents();
+
+    curFile = "";
+    setWindowFilePath(curFile);
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
 }
 
-/** Window methods
- * @brief
+/**
+ * @brief SheetWidget::closeEvent
+ * @param event
  */
+void SheetWidget::closeEvent(QCloseEvent* event)
+{
+    QMessageBox::StandardButton confirm = QMessageBox::question( this, "Tau-U Calculator",
+                                                                tr("Are you sure you want to quit?\n"),
+                                                                QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,
+                                                                QMessageBox::Yes);
+    if (confirm != QMessageBox::Yes) {
+        event->ignore();
+    } else {
+        saveSettings();
+        event->accept();
+    }
+}
 
+/**
+ * @brief SheetWidget::openRecentFile
+ */
+void SheetWidget::openRecentFile()
+{
+    QAction *action = qobject_cast<QAction *>(sender());
+    if (action)
+    {
+        QString mFile = action->data().toString();
+
+        if (QFile::exists(mFile))
+        {
+            Document xlsx2(mFile);
+            QStringList sheets = xlsx2.sheetNames();
+
+            sheetSelectDialog = new SheetSelectDialog(this);
+            sheetSelectDialog->UpdateUI(sheets);
+            sheetSelectDialog->setModal(true);
+
+            if(sheetSelectDialog->exec())
+            {
+                table->clearContents();
+
+                xlsx2.selectSheet(sheetSelectDialog->GetSelected());
+
+                for (int w = 0; w < xlsx2.dimension().lastColumn() + 1; w++)
+                {
+                    for (int h = 0; h < xlsx2.dimension().lastRow() + 1; h++)
+                    {
+                        if (QXlsx::Cell *cell = xlsx2.cellAt(h, w))
+                        {
+                            if (cell->cellType() == Cell::NumberType || cell->cellType() == Cell::StringType || cell->cellType() == Cell::SharedStringType)
+                            {
+                                table->setItem(h-1, w-1, new QTableWidgetItem(cell->value().toString()));
+                            }
+                        }
+                    }
+                }
+
+                setCurrentFile(mFile);
+                statusBar()->showMessage(tr("File loaded"), 2000);
+            }
+        }
+    }
+}
+
+/**
+ * @brief SheetWidget::setCurrentFile
+ * @param fileName
+ */
+void SheetWidget::setCurrentFile(const QString &fileName)
+{
+    curFile = fileName;
+    setWindowFilePath(curFile);
+
+    QSettings settings(QSettings::UserScope, QLatin1String("Tau-U Calculator"));
+    settings.beginGroup(QLatin1String("SheetWindow"));
+
+    QStringList files = settings.value(QLatin1String("recentFileList")).toStringList();
+    files.removeAll(fileName);
+    files.prepend(fileName);
+
+    while (files.size() > MaxRecentFiles)
+    {
+        files.removeLast();
+    }
+
+    settings.setValue("recentFileList", files);
+    settings.endGroup();
+    settings.sync();
+
+    updateRecentFileActions();
+}
+
+/**
+ * @brief SheetWidget::saveSettings
+ */
+void SheetWidget::saveSettings()
+{
+    QSettings settings(QSettings::UserScope, QLatin1String("Tau-U Calculator"));
+    settings.beginGroup(QLatin1String("SheetWindow"));
+
+    QStringList files = settings.value("recentFileList").toStringList();
+
+    settings.setValue(QLatin1String("recentFileList"), files);
+    settings.endGroup();
+
+    settings.sync();
+}
+
+/**
+ * @brief SheetWidget::eventFilter
+ * @param object
+ * @param event
+ * @return
+ */
+bool SheetWidget::eventFilter(QObject *object, QEvent *event)
+{
+    if (event->type() == QEvent::KeyPress)
+    {
+        auto keyCode = static_cast<QKeyEvent *>(event);
+        if (keyCode->key() == (int) Qt::Key_Return)
+        {
+            if (table->currentRow() + 1 >= table->rowCount())
+            {
+                return QObject::eventFilter(object, event);
+            }
+
+            table->setCurrentCell(table->currentRow() + 1, table->currentColumn());
+        }
+    }
+
+    return QObject::eventFilter(object, event);
+}
+
+/**
+ * @brief SheetWidget::showOpenFileDialog
+ */
 void SheetWidget::showOpenFileDialog()
 {
+    QString file_name;
     QString fileFilter = "Spreadsheet (*.xlsx)";
-    QString file_name = QFileDialog::getOpenFileName(this, "Open a file", QDir::homePath(), fileFilter);
+
+    #ifdef _WIN32
+
+    file_name = QFileDialog::getOpenFileName(this, "Open spreadsheet file", QDir::homePath(),
+                                             fileFilter);
+
+    #elif TARGET_OS_MAC
+
+    file_name = QFileDialog::getOpenFileName(nullptr, "Open spreadsheet file", QDir::homePath(),
+                                             fileFilter, nullptr, QFileDialog::Option::DontUseNativeDialog);
+
+    #endif
 
     if(!file_name.trimmed().isEmpty())
     {
+        QApplication::setOverrideCursor(Qt::WaitCursor);
+
         Document xlsx2(file_name);
         QStringList sheets = xlsx2.sheetNames();
 
@@ -357,12 +682,9 @@ void SheetWidget::showOpenFileDialog()
 
             xlsx2.selectSheet(sheetSelectDialog->GetSelected());
 
-            xlsx2.dimension().lastColumn();
-            xlsx2.dimension().lastRow();
-
-            for (int w = 0; w < xlsx2.dimension().lastColumn(); w++)
+            for (int w = 0; w < xlsx2.dimension().lastColumn() + 1; w++)
             {
-                for (int h = 0; h < xlsx2.dimension().lastRow(); h++)
+                for (int h = 0; h < xlsx2.dimension().lastRow() + 1; h++)
                 {
                     if (QXlsx::Cell *cell = xlsx2.cellAt(h, w))
                     {
@@ -373,137 +695,164 @@ void SheetWidget::showOpenFileDialog()
                     }
                 }
             }
+
+            setCurrentFile(file_name);
+            statusBar()->showMessage(tr("File loaded"), 2000);
         }
+
+        QApplication::restoreOverrideCursor();
     }
 }
 
+/**
+ * @brief SheetWidget::updateRecentFileActions
+ */
+void SheetWidget::updateRecentFileActions()
+{
+    QSettings settings(QSettings::UserScope, QLatin1String("Tau-U Calculator"));
+    settings.beginGroup(QLatin1String("SheetWindow"));
+    QStringList files = settings.value("recentFileList").toStringList();
+
+    int numRecentFiles = qMin(files.size(), (int)MaxRecentFiles);
+
+    for (int i = 0; i < numRecentFiles; ++i) {
+        QString text = tr("&%1 %2").arg(i + 1).arg(strippedName(files[i]));
+        recentFileActs[i]->setText(text);
+        recentFileActs[i]->setData(files[i]);
+        recentFileActs[i]->setVisible(true);
+    }
+
+    for (int j = numRecentFiles; j < MaxRecentFiles; ++j)
+    {
+        recentFileActs[j]->setVisible(false);
+    }
+
+    separatorAct->setVisible(numRecentFiles > 0);
+}
+
+/**
+ * @brief SheetWidget::showSaveFileDialog
+ */
 void SheetWidget::showSaveFileDialog()
 {
-    QString selFilter="Spreadsheet (*.xlsx)";
-    QString file_name = QFileDialog::getSaveFileName(this, "Save file As", QDir::currentPath(), "Spreadsheet (*.xlsx)", &selFilter);
+
+    QString file_name;
+    QString fileFilter = "Spreadsheet (*.xlsx)";
+
+#ifdef _WIN32
+
+        file_name = QFileDialog::getSaveFileName(this, "Save spreadsheet file", QDir::homePath(),
+                                         fileFilter);
+
+#elif TARGET_OS_MAC
+
+        file_name = QFileDialog::getSaveFileName(this, "Save spreadsheet file", QDir::homePath(),
+                                         fileFilter, &fileFilter, QFileDialog::Option::DontUseNativeDialog);
+
+        if (!file_name.contains(".xlsx"))
+        {
+            file_name.append(".xlxs");
+        }
+
+#endif
 
     if(!file_name.trimmed().isEmpty())
     {
+        QApplication::setOverrideCursor(Qt::WaitCursor);
+
         QXlsx::Document xlsx;
 
         int rows = table->rowCount();
         int cols = table->columnCount();
 
         QString temp;
-        QTableWidgetItem *col;
 
         for (int i=0; i<rows; i++)
         {
             for (int j=0; j<cols; j++)
             {
-                if (i == 0)
-                {
-                    col = table->horizontalHeaderItem(j);
-                    temp = col->text();
-                    xlsx.write(1, j + 1, temp);
-                }
+                QTableWidgetItem *item = table->item(i, j);
 
-                temp = table->item(i, j)->data(Qt::DisplayRole).toString();
-                xlsx.write(i + 2, j + 1, temp);
+                if (item != NULL && !item->text().isEmpty())
+                {
+                    temp = table->item(i, j)->data(Qt::DisplayRole).toString();
+                    xlsx.write(i + 1, j + 1, temp);
+                }
             }
         }
 
         xlsx.saveAs(file_name);
+        setCurrentFile(file_name);
+
+        QApplication::restoreOverrideCursor();
+
+        statusBar()->showMessage(tr("File saved"), 2000);
     }
 }
 
-void SheetWidget::showAnalysisWindow()
+/**
+ * @brief SheetWidget::showTauUWindow
+ */
+void SheetWidget::showTauUWindow()
 {
-    if (!modelSelectDialog->isVisible())
-    {
-        modelSelectDialog = new ModelSelectionDialog(this);
-        modelSelectDialog->setModal(false);
-
-        modelSelectDialog->show();
-    }
+    tauWindow = new TauDialog(this);
+    tauWindow->setModal(false);
+    tauWindow->show();
 }
 
-void SheetWidget::showDMSLicenseWindow()
-{
-    licenseDialog = new LicenseDialog("COPYING.txt", this);
-    licenseDialog->setWindowTitle("DMS License (GPL-V3)");
-    licenseDialog->setModal(true);
-    licenseDialog->show();
-}
-
-void SheetWidget::showRLicenseWindow()
-{
-    licenseDialog = new LicenseDialog("License_R.txt", this);
-    licenseDialog->setWindowTitle("R License (GPL-V3)");
-    licenseDialog->setModal(true);
-    licenseDialog->show();
-}
-
-void SheetWidget::showNLSLicenseWindow()
-{
-    licenseDialog = new LicenseDialog("License_NLS.txt", this);
-    licenseDialog->setWindowTitle("nls License (GPL-V3)");
-    licenseDialog->setModal(true);
-    licenseDialog->show();
-}
-
-void SheetWidget::showBase64LicenseWindow()
-{
-    licenseDialog = new LicenseDialog("License_base64enc.txt", this);
-    licenseDialog->setWindowTitle("base64enc License (GPL-V3)");
-    licenseDialog->setModal(true);
-    licenseDialog->show();
-}
-
-void SheetWidget::showGridextraLicenseWindow()
-{
-    licenseDialog = new LicenseDialog("License_R.txt", this);
-    licenseDialog->setWindowTitle("gridExtra License (MIT)");
-    licenseDialog->setModal(true);
-    licenseDialog->show();
-}
-
-void SheetWidget::showJsonliteLicenseWindow()
-{
-    licenseDialog = new LicenseDialog("License_jsonlite.txt", this);
-    licenseDialog->setWindowTitle("jsonlite License (MIT)");
-    licenseDialog->setModal(true);
-    licenseDialog->show();
-}
-
-void SheetWidget::showReshapeLicenseWindow()
-{
-    licenseDialog = new LicenseDialog("License_reshape.txt", this);
-    licenseDialog->setWindowTitle("reshape License (MIT)");
-    licenseDialog->setModal(true);
-    licenseDialog->show();
-}
-
-void SheetWidget::showBDSLicenseWindow()
-{
-
-    licenseDialog = new LicenseDialog("License_BDS.txt", this);
-    licenseDialog->setWindowTitle("DMS License (GPL-V3)");
-    licenseDialog->setModal(true);
-    licenseDialog->show();
-}
-
+/**
+ * @brief SheetWidget::showQTLicenseWindow
+ */
 void SheetWidget::showQTLicenseWindow()
 {
-    licenseDialog = new LicenseDialog("License_Qt.txt", this);
+    QString mFilePath = "";
+
+    #ifdef _WIN32
+            mFilePath = "License_Qt.txt";
+    #elif TARGET_OS_MAC
+            QDir runDirectory = QDir(QCoreApplication::applicationDirPath());
+            runDirectory.cdUp();
+            runDirectory.cd("Resources");
+            mFilePath = "\"" + runDirectory.path() + "/";
+
+            mFilePath = mFilePath + scriptName + "License_Qt.txt\"";
+
+    #endif
+
+    licenseDialog = new LicenseDialog(mFilePath, this);
     licenseDialog->setWindowTitle("Qt License (LGPL-V3)");
     licenseDialog->setModal(true);
     licenseDialog->show();
 }
 
+/**
+ * @brief SheetWidget::showGnomeLicenseWindow
+ */
 void SheetWidget::showGnomeLicenseWindow()
 {
-    licenseDialog = new LicenseDialog("License_gnome_icons.txt", this);
+    QString mFilePath = "";
+
+    #ifdef _WIN32
+            mFilePath = "License_gnome_icons.txt";
+    #elif TARGET_OS_MAC
+            QDir runDirectory = QDir(QCoreApplication::applicationDirPath());
+            runDirectory.cdUp();
+            runDirectory.cd("Resources");
+            mFilePath = "\"" + runDirectory.path() + "/";
+
+            mFilePath = mFilePath + scriptName + "License_gnome_icons.txt\"";
+
+    #endif
+
+    licenseDialog = new LicenseDialog(mFilePath, this);
     licenseDialog->setWindowTitle("Gnome Icon Set License (GPL-V3)");
     licenseDialog->setModal(true);
     licenseDialog->show();
 }
 
+/**
+ * @brief SheetWidget::showCreditsWindow
+ */
 void SheetWidget::showCreditsWindow()
 {
     creditsDialog = new CreditsDialog();
@@ -511,6 +860,9 @@ void SheetWidget::showCreditsWindow()
     creditsDialog->show();
 }
 
+/**
+ * @brief SheetWidget::showFAQWindow
+ */
 void SheetWidget::showFAQWindow()
 {
     aboutDialog = new AboutDialog();
@@ -518,16 +870,18 @@ void SheetWidget::showFAQWindow()
     aboutDialog->show();
 }
 
-/** Edit methods
- * @brief
+/**
+ * @brief SheetWidget::cut
  */
-
 void SheetWidget::cut()
 {
     SheetWidget::copy();
     SheetWidget::clear();
 }
 
+/**
+ * @brief SheetWidget::copy
+ */
 void SheetWidget::copy()
 {
     QList<QTableWidgetSelectionRange> range = table->selectedRanges();
@@ -561,6 +915,9 @@ void SheetWidget::copy()
     QApplication::clipboard()->setText(str);
 }
 
+/**
+ * @brief SheetWidget::paste
+ */
 void SheetWidget::paste()
 {
     QTableWidgetSelectionRange range = table->selectedRanges().first();
@@ -569,16 +926,6 @@ void SheetWidget::paste()
 
     int nRows = pasteRows.count();
     int nCols = pasteRows.first().count('\t') + 1;
-
-    if (range.rowCount() * range.columnCount() != 1
-            && (range.rowCount() != nRows
-                || range.columnCount() != nCols)) {
-
-        QMessageBox::information(this, tr("Spreadsheet"),
-                tr("The information cannot be pasted because the copy "
-                   "and paste areas aren't the same size."));
-        return;
-    }
 
     for (int i = 0; i < nRows; ++i) {
         QStringList columns = pasteRows[i].split('\t');
@@ -591,11 +938,17 @@ void SheetWidget::paste()
             {
                 if (table->item(row, column) != NULL)
                 {
-                    table->item(row, column)->setText(columns[j]);
+                    if (j < columns.length())
+                    {
+                        table->item(row, column)->setText(columns[j]);
+                    }
                 }
                 else
                 {
-                    table->setItem(row, column, new QTableWidgetItem(columns[j]));
+                    if (j < columns.length())
+                    {
+                        table->setItem(row, column, new QTableWidgetItem(columns[j]));
+                    }
                 }
             }
         }
@@ -604,6 +957,51 @@ void SheetWidget::paste()
     table->viewport()->update();
 }
 
+/**
+ * @brief SheetWidget::pasteInverted
+ */
+void SheetWidget::pasteInverted()
+{
+    QTableWidgetSelectionRange range = table->selectedRanges().first();
+    QString pasteString = QApplication::clipboard()->text();
+    QStringList pasteRows = pasteString.split('\n');
+
+    int nRows = pasteRows.count();
+    int nCols = pasteRows.first().count('\t') + 1;
+
+    for (int i = 0; i < nRows; ++i) {
+        QStringList columns = pasteRows[i].split('\t');
+
+        for (int j = 0; j < nCols; ++j) {
+            int row = range.topRow() + j;
+            int column = range.leftColumn() + i;
+
+            if (row < 10000 && column < 10000)
+            {
+                if (table->item(row, column) != NULL)
+                {
+                    if (j < columns.length())
+                    {
+                        table->item(row, column)->setText(columns[j]);
+                    }
+                }
+                else
+                {
+                    if (j < columns.length())
+                    {
+                        table->setItem(row, column, new QTableWidgetItem(columns[j]));
+                    }
+                }
+            }
+        }
+    }
+
+    table->viewport()->update();
+}
+
+/**
+ * @brief SheetWidget::clear
+ */
 void SheetWidget::clear()
 {
     foreach (QTableWidgetItem *i, table->selectedItems())
@@ -612,398 +1010,427 @@ void SheetWidget::clear()
     }
 }
 
-/** Window helper methods
- * @brief
+/**
+ * @brief SheetWidget::isToolWindowShown
+ * @return
  */
-
-void SheetWidget::updateDelayModalWindow()
+bool SheetWidget::isToolWindowShown()
 {
-    if (!modelSelectDialog->isVisible())
+    /*
+    if (discountingAreaDialog->isVisible())
     {
-        return;
+        return true;
     }
-
-    QList<QTableWidgetSelectionRange> mList = table->selectedRanges();
-    QTableWidgetSelectionRange range = mList.first();
-
-    QString mLeft = "";
-    convertExcelColumn(mLeft, range.leftColumn());
-
-    QString mRight = "";
-    convertExcelColumn(mRight, range.rightColumn());
-
-    mLeft.append(QString::number(range.topRow() + 1));
-    mLeft.append(":");
-    mLeft.append(mRight);
-    mLeft.append(QString::number(range.bottomRow() + 1));
-
-    int mWidth = range.rightColumn() - range.leftColumn();
-    int mHeight = range.bottomRow() - range.topRow();
-
-    if (mWidth > 0 && mHeight > 0)
+    else if (discountingED50Dialog->isVisible())
     {
-        QMessageBox::critical(this, "Error", "Please select a vector of delays (e.g., one column or one row).");
-        return;
+        return true;
     }
-    else if (mWidth + mHeight < 3)
-    {
-        QMessageBox::critical(this, "Error", "Please select at least 3 delay points. At least 3 points are needed to proceed with curve fitting.");
-        return;
-    }
+    */
 
-    modelSelectDialog->UpdateDelays(mLeft, range.topRow(), range.leftColumn(), range.bottomRow(), range.rightColumn());
+    return false;
 }
 
-void SheetWidget::updateValueModalWindow()
-{
-    if (!modelSelectDialog->isVisible())
-    {
-        return;
-    }
-
-    QList<QTableWidgetSelectionRange> mList = table->selectedRanges();
-    QTableWidgetSelectionRange range = mList.first();
-
-    QString mLeft = "";
-    convertExcelColumn(mLeft, range.leftColumn());
-
-    QString mRight = "";
-    convertExcelColumn(mRight, range.rightColumn());
-
-    mLeft.append(QString::number(range.topRow() + 1));
-    mLeft.append(":");
-    mLeft.append(mRight);
-    mLeft.append(QString::number(range.bottomRow() + 1));
-
-    modelSelectDialog->UpdateValues(mLeft, range.topRow(), range.leftColumn(), range.bottomRow(), range.rightColumn());
-}
-
-void SheetWidget::updateMaxValueModalWindow()
-{
-    if (!modelSelectDialog->isVisible())
-    {
-        return;
-    }
-
-    if (table->currentItem() != NULL)
-    {
-        modelSelectDialog->UpdateMaxValue(table->currentItem()->data(Qt::DisplayRole).toString());
-    }
-}
-
-/** Scoring methods
- * @brief
+/**
+ * @brief SheetWidget::ParseData
+ * @param correct
+ * @param threshold
+ * @param confidence
+ * @param figures
  */
-
-void SheetWidget::Calculate(int topDelay, int leftDelay, int bottomDelay, int rightDelay, int topValue, int leftValue, int bottomValue, int rightValue,
-                            double maxValue, bool cbBIC, bool cbAIC, bool cbRMSE, bool cbBF, bool cbRachlin,
-                            bool modelExponential, bool modelHyperbolic, bool modelQuasiHyperbolic, bool modelMyersonGreen, bool modelRachlin,
-                            bool showCharts)
+void SheetWidget::ParseData(bool correct, double threshold, double confidence, QString figures)
 {
+    int rowTotals = 0, subjTotals = 0, phaseTotals = 0;
+    allResults.clear();
+    mStudySum.clear();
+    tauStudyList.clear();
+    studyTags.clear();
+    idTags.clear();
+    phaseTags.clear();
 
-    tripAIC = cbAIC;
-    tripBIC = cbBIC;
-    tripBF = cbBF;
-    tripRMSE = cbRMSE;
+    QString temp;
+    QTableWidgetItem *item;
 
-    displayFigures = showCharts;
-
-    modelSelectDialog->ToggleButton(false);
-
-    bool isRowData = (rightDelay - leftDelay == 0) ? false : true;
-    int nSeries = (isRowData) ? bottomValue - topValue + 1 : nSeries = rightValue - leftValue + 1;
-
-    int dWidth = rightDelay - leftDelay + 1;
-    int dLength = bottomDelay - topDelay + 1;
-
-    int vWidth = rightValue - leftValue + 1;
-    int vLength = bottomValue - topValue + 1;
-
-    if (!areDimensionsValid(isRowData, dWidth, vWidth, dLength, vLength))
+    // Parse all available data
+    for (int i=0; i<1000; i++)
     {
+        item = table->item(i, 0);
+
+        if (item != NULL && !item->text().isEmpty())
+        {
+            temp = table->item(i, 0)->data(Qt::DisplayRole).toString();
+            studyTags.append(temp);
+            rowTotals++;
+        }
+        else
+        {
+            break;
+        }
+
+        item = table->item(i, 1);
+
+        if (item != NULL && !item->text().isEmpty())
+        {
+            temp = table->item(i, 1)->data(Qt::DisplayRole).toString();
+            idTags.append(temp);
+            subjTotals++;
+        }
+        else
+        {
+            break;
+        }
+
+        item = table->item(i, 2);
+
+        if (item != NULL && !item->text().isEmpty())
+        {
+            temp = table->item(i, 2)->data(Qt::DisplayRole).toString();
+            phaseTags.append(temp);
+            phaseTotals++;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    if (rowTotals != subjTotals || subjTotals != phaseTotals)
+    {
+        QMessageBox::about(this, "Error", "The available data does not appear complete");
+
         return;
     }
 
-    QStringList delayPoints;
+    calculator = new TauUCalculations();
+    QList<TauUModel> tauList;
 
-    if(!areDelayPointsValid(delayPoints, isRowData, topDelay, leftDelay, bottomDelay, rightDelay))
+    // Compute all comparisons
+    for (int i=1; i<rowTotals; i++)
     {
-        return;
+        QTableWidgetItem *item;
+
+        QString preStudy = table->item(i-1, 0)->data(Qt::DisplayRole).toString();
+        QString preSubject = table->item(i-1, 1)->data(Qt::DisplayRole).toString();
+        QString prePhase = table->item(i-1, 2)->data(Qt::DisplayRole).toString();
+
+        QString postStudy = table->item(i, 0)->data(Qt::DisplayRole).toString();
+        QString postSubject = table->item(i, 1)->data(Qt::DisplayRole).toString();
+        QString postPhase = table->item(i, 2)->data(Qt::DisplayRole).toString();
+
+        TauUModel tauModel;
+
+        if (prePhase == "A" && postPhase == "B" &&
+            preSubject == postSubject && preStudy == postStudy)
+        {
+            bool validateNumber;
+
+            QList<double> baselines;
+            QList<double> interventions;
+
+            for (int j = 3; j < 1000; j++)
+            {
+                item = table->item(i-i, j);
+
+                if (item != NULL && !item->text().isEmpty())
+                {
+                    temp = table->item(i-i, j)->data(Qt::DisplayRole).toString();
+
+                    if(temp.trimmed() == "0")
+                    {
+                        baselines.append(0.0);
+                    }
+                    else if(temp.toDouble(&validateNumber))
+                    {
+                        baselines.append(temp.toDouble());
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            for (int j = 3; j < 1000; j++)
+            {
+                item = table->item(i, j);
+
+                if (item != NULL && !item->text().isEmpty())
+                {
+                    temp = table->item(i, j)->data(Qt::DisplayRole).toString();
+
+                    if(temp.trimmed() == "0")
+                    {
+                        interventions.append(0.0);
+                    }
+                    else if(temp.toDouble(&validateNumber))
+                    {
+                        interventions.append(temp.toDouble());
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            calculator->SetData(baselines, interventions, preStudy, preSubject, "Participant");
+
+            tauModel = calculator->BaselineTrend();
+
+            if (correct)
+            {
+                if (threshold != -1)
+                {
+                    if (qFabs(tauModel.TAU) >= qFabs(threshold))
+                    {
+                        tauModel = calculator->CompareTrend(true, confidence);
+                    }
+                    else
+                    {
+                        tauModel = calculator->CompareTrend(false, confidence);
+                    }
+                }
+                else
+                {
+                    tauModel = calculator->CompareTrend(true, confidence);
+                }
+            }
+            else
+            {
+                tauModel = calculator->CompareTrend(false, confidence);
+            }
+
+            tauList.append(tauModel);
+        }
     }
 
+    // Merge similar
+    QList<TauUModel> tempList;
+    for (int d = tauList.count() - 2; d >= 0; d--)
+    {
+        if (tauList[d].StudyName == tauList[d+1].StudyName &&
+            tauList[d].ParticipantName == tauList[d+1].ParticipantName)
+        {
+            tempList.clear();
+            tempList << tauList[d] << tauList[d+1];
+            tauList[d] = CombineTaus(tempList, confidence, tauList[d].StudyName);
+            tauList[d].ParticipantName = tauList[d+1].ParticipantName;
+
+            if (tauList[d].IsCorrected || tauList[d+1].IsCorrected)
+            {
+                tauList[d].IsCorrected = true;
+            }
+            else
+            {
+                tauList[d].IsCorrected = false;
+            }
+
+            tauList.removeAt(d+1);
+        }
+    }
+
+    // Merge shared tau's (e.g., same participants)
     resultsDialog = new ResultsDialog(this);
     resultsDialog->setModal(false);
 
-    QString mDelayArgs = delayPoints.join(",");
+    // After all studies pulled, remove duplicates
+    studyTags.removeDuplicates();
 
-    QString mValueArgs;
-    QStringList valuePoints;
-
-    mSeriesCommands.clear();
-
-    for (int i = 0; i < nSeries; i++)
+    bool hasACorrectedValue;
+    bool hasACorrectedValueSomewhere = false;
+    foreach (QString studyName, studyTags)
     {
-        valuePoints.clear();
+        hasACorrectedValue = false;
+        mStudySum.clear();
 
-        if (!areValuePointsValid(valuePoints, isRowData, topValue, leftValue, bottomValue, rightValue, i, maxValue))
-        {
-            return;
+        foreach (TauUModel tauModel, tauList) {
+            if (tauModel.StudyName == studyName)
+            {
+                if (tauModel.IsCorrected)
+                {
+                    hasACorrectedValue = true;
+                    hasACorrectedValueSomewhere = true;
+                }
+                mStudySum.append(tauModel);
+            }
         }
 
-        mValueArgs = valuePoints.join(",");
+        TauUModel mModel = CombineTaus(mStudySum, confidence, studyName);
+        mModel.StudyName = studyName;
+        mModel.IsCorrected = hasACorrectedValue;
 
-        QStringList modelArgs;
-        modelArgs << "1";
-        modelArgs << convert_bool(modelHyperbolic);
-        modelArgs << convert_bool(modelExponential);
-        modelArgs << convert_bool(modelRachlin);
-        modelArgs << convert_bool(modelMyersonGreen);
-        modelArgs << convert_bool(modelQuasiHyperbolic);
-
-        QStringList mArgList;
-        mArgList << "FranckComputation.R";
-        mArgList << mDelayArgs;
-        mArgList << mValueArgs;
-        mArgList << modelArgs.join(",");
-
-        mSeriesCommands << mArgList.join(" ");
+        tauStudyList.append(mModel);
     }
 
-    allResults.clear();
+    QStringList mLineEntry;
+    mLineEntry << "Omnibus-level output:";
+    allResults.append(mLineEntry);
 
-    thread = new QThread();
-    worker = new FitWorker(commandParameter, mSeriesCommands, cbRachlin);
+    QString mTempBoolString;
 
-    worker->moveToThread(thread);
+    if (tauList.count() > 2)
+    {
+        TauUModel mOmniModel = CombineTaus(tauList, confidence, "---");
+        mOmniModel.IsCorrected = hasACorrectedValueSomewhere;
 
-    connect(worker, SIGNAL(workStarted()), thread, SLOT(start()));
-    connect(thread, SIGNAL(started()), worker, SLOT(working()));
-    connect(worker, SIGNAL(workingResult(QStringList)), this, SLOT(WorkUpdate(QStringList)));
-    connect(worker, SIGNAL(workFinished()), thread, SLOT(quit()), Qt::DirectConnection);
+        if (figures == "Individual")
+        {
+            LaunchIndividualSeriesFigure(tauList, mOmniModel);
+        }
+        else if (figures == "Study")
+        {
+            LaunchStudySeriesFigure(tauStudyList, mOmniModel);
+        }
 
-    orderVar = 0;
-    finalVar = nSeries;
+        mTempBoolString = (hasACorrectedValueSomewhere) ? "True" : "False";
 
-    thread->wait();
-    worker->startWork();
+        mLineEntry.clear();
+        mLineEntry << "Omnibus" << "---" << "---" << mTempBoolString << QString::number(mOmniModel.S) <<
+                      QString::number(mOmniModel.Pairs) << QString::number(mOmniModel.Ties) <<
+                      QString::number(mOmniModel.TAU) << "---" << QString::number(mOmniModel.TAUB) <<
+                      QString::number(mOmniModel.SDtau) << QString::number(mOmniModel.Z) <<
+                      QString::number(mOmniModel.PValue);
 
-    graphicalOutputDialog = new GraphicalOutputDialog(this);
-    graphicalOutputDialog->mDisplayData.clear();
+        allResults.append(mLineEntry);
 
-    statusBar()->showMessage("Beginning calculations...", 3000);
+        mLineEntry.clear();
+        mLineEntry << "";
+
+        allResults.append(mLineEntry);
+    }
+
+    mLineEntry.clear();
+    mLineEntry << "Study-level output:";
+    allResults.append(mLineEntry);
+
+    foreach (TauUModel tauModel, tauStudyList) {
+        mTempBoolString = (tauModel.IsCorrected) ? "True" : "False";
+
+        mLineEntry.clear();
+        mLineEntry << "Study" << tauModel.StudyName << "---" << mTempBoolString << QString::number(tauModel.S) <<
+                      QString::number(tauModel.Pairs) << QString::number(tauModel.Ties) <<
+                      QString::number(tauModel.TAU) << "---" << QString::number(tauModel.TAUB) <<
+                      QString::number(tauModel.SDtau) << QString::number(tauModel.Z) <<
+                      QString::number(tauModel.PValue);
+
+        allResults.append(mLineEntry);
+    }
+
+    mLineEntry.clear();
+    mLineEntry << "";
+    allResults.append(mLineEntry);
+
+    mLineEntry.clear();
+    mLineEntry << "Individual-level output:";
+    allResults.append(mLineEntry);
+
+    foreach (TauUModel tauModel, tauList) {
+        mTempBoolString = (tauModel.IsCorrected) ? "True" : "False";
+
+        mLineEntry.clear();
+        mLineEntry << "Individual" << tauModel.StudyName << tauModel.ParticipantName << mTempBoolString << QString::number(tauModel.S) <<
+                      QString::number(tauModel.Pairs) << QString::number(tauModel.Ties) <<
+                      QString::number(tauModel.TAU) << "---" << QString::number(tauModel.TAUB) <<
+                      QString::number(tauModel.SDtau) << QString::number(tauModel.Z) <<
+                      QString::number(tauModel.PValue);
+
+        allResults.append(mLineEntry);
+    }
+
+    mLineEntry.clear();
+    mLineEntry << "";
+    allResults.append(mLineEntry);
+
+    resultsDialog->ImportDataAndShow();
+
 }
 
-void SheetWidget::WorkUpdate(QStringList status)
-{
-    statusBar()->showMessage("Calculating set " + QString::number(orderVar + 1) + " of " + QString::number(finalVar), 3000);
-
-    orderVar++;
-
-    allResults.append(status);
-
-    if (displayFigures)
-    {
-        graphicalOutputDialog->appendBase64(status.at(status.count() - 1));
-    }
-
-    if (orderVar == finalVar)
-    {
-        modelSelectDialog->ToggleButton(true);
-
-        resultsDialog->ImportDataAndShow(tripBIC, tripAIC, tripRMSE, tripBF);
-        modelSelectDialog->ToggleButton(true);
-
-        if (displayFigures)
-        {
-            graphicalOutputDialog->show();
-        }
-    }
-}
-
-bool SheetWidget::areDelayPointsValid(QStringList &delayPoints, bool isRowData, int topDelay, int leftDelay, int bottomDelay, int rightDelay)
-{
-    delayPoints.clear();
-
-    QString holder;
-    bool valueCheck = true;
-
-    if (isRowData)
-    {
-        int r = topDelay;
-
-        for (int c = leftDelay; c <= rightDelay; c++)
-        {
-            if (table->item(r, c) == NULL)
-            {
-                QMessageBox::critical(this, "Error",
-                                      "One of your delay measures doesn't look correct. Please re-check these values or selections.");
-                modelSelectDialog->ToggleButton(true);
-
-                return false;
-            }
-
-            holder = table->item(r, c)->data(Qt::DisplayRole).toString();
-            holder.toDouble(&valueCheck);
-
-            delayPoints << holder;
-
-            if (!valueCheck)
-            {
-                QMessageBox::critical(this, "Error",
-                                      "One of your delay measures doesn't look correct. Please re-check these values or selections.");
-                modelSelectDialog->ToggleButton(true);
-
-                return false;
-            }
-        }
-    }
-    else
-    {
-        int c = leftDelay;
-
-        for (int r = topDelay; r <= bottomDelay; r++)
-        {
-            if (table->item(r, c) == NULL)
-            {
-                QMessageBox::critical(this, "Error",
-                                      "One of your delay measures doesn't look correct. Please re-check these values or selections.");
-                modelSelectDialog->ToggleButton(true);
-
-                return false;
-            }
-
-            holder = table->item(r, c)->data(Qt::DisplayRole).toString();
-            holder.toDouble(&valueCheck);
-
-            delayPoints << holder;
-
-            if (!valueCheck)
-            {
-                QMessageBox::critical(this, "Error",
-                                      "One of your delay measures doesn't look correct. Please re-check these values or selections.");
-                modelSelectDialog->ToggleButton(true);
-
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
-
-bool SheetWidget::areDimensionsValid(bool isRowData, int dWidth, int vWidth, int dLength, int vLength)
-{
-    if (isRowData)
-    {
-        if (dWidth != vWidth)
-        {
-            QMessageBox::critical(this, "Error",
-                                  "You have row-based data, but the data selected appears to have different column counts. Please correct.");
-            modelSelectDialog->ToggleButton(true);
-
-            return false;
-        }
-    }
-    else
-    {
-        if (dLength != vLength)
-        {
-            QMessageBox::critical(this, "Error",
-                                  "You have column-based data, but the data selected appears to have different row counts. Please correct.");
-            modelSelectDialog->ToggleButton(true);
-
-            return false;
-        }
-    }
-
-    return true;
-}
-
-bool SheetWidget::areValuePointsValid(QStringList &valuePoints, bool isRowData, int topValue, int leftValue, int bottomValue, int rightValue, int i, double maxValue)
-{
-    valuePoints.clear();
-
-    QString holder;
-    bool valueCheck = true;
-    double valHolder;
-
-    if (isRowData)
-    {
-        int r = topValue;
-
-        for (int c = leftValue; c <= rightValue; c++)
-        {
-            if (table->item(r + i, c) == NULL)
-            {
-                QMessageBox::critical(this, "Error",
-                                      "One of your value measures doesn't look correct. Please re-check these values or selections.");
-                modelSelectDialog->ToggleButton(true);
-
-                return false;
-            }
-
-            holder = table->item(r + i, c)->data(Qt::DisplayRole).toString();
-            valHolder = holder.toDouble(&valueCheck);
-
-            if (!valueCheck)
-            {
-                QMessageBox::critical(this, "Error",
-                                      "One of your value measures doesn't look correct. Please re-check these values or selections.");
-                modelSelectDialog->ToggleButton(true);
-
-                return false;
-            }
-
-            valHolder = valHolder / maxValue;
-
-            valuePoints << QString::number(valHolder);
-        }
-    }
-    else
-    {
-        int c = leftValue;
-
-        for (int r = topValue; r <= bottomValue; r++)
-        {
-            if (table->item(r, c + i) == NULL)
-            {
-                QMessageBox::critical(this, "Error",
-                                      "One of your values measures doesn't look correct. Please re-check these values or selections.");
-                modelSelectDialog->ToggleButton(true);
-
-                return false;
-            }
-
-            holder = table->item(r, c + i)->data(Qt::DisplayRole).toString();
-            valHolder = holder.toDouble(&valueCheck);
-
-            if (!valueCheck)
-            {
-                QMessageBox::critical(this, "Error",
-                                      "One of your value measures doesn't look correct. Please re-check these values or selections.");
-                modelSelectDialog->ToggleButton(true);
-
-                return false;
-            }
-
-            valHolder = valHolder / maxValue;
-
-            valuePoints << QString::number(valHolder);
-        }
-    }
-
-    return true;
-}
-
-/** Utilities
- * @brief
+/**
+ * @brief SheetWidget::CombineTaus
+ * @param selectedTaus
+ * @param confidence
+ * @param studyName
+ * @return
  */
-
-QString SheetWidget::convert_bool(bool value)
+TauUModel SheetWidget::CombineTaus(QList<TauUModel> selectedTaus, double confidence, QString studyName)
 {
-    return (value) ? QString("1") : QString("0");
+    if (selectedTaus.count() == 1)
+    {
+        return selectedTaus.first();
+    }
+
+    // Based on Hedges' Optimal Weighting formula
+
+    double globalTau = 0.0, globalSETau = 0.0;
+    double inverseSd = 0.0, inverseSdSum = 0.0;
+
+    bool isCorrected = false;
+
+    foreach(TauUModel model, selectedTaus)
+    {
+        inverseSd = 1.0 / model.SDtau;
+        inverseSdSum += inverseSd;
+        globalTau += model.TAU * inverseSd;
+        globalSETau += model.SDtau * model.SDtau;
+
+        if (isCorrected)
+        {
+            isCorrected = true;
+        }
+    }
+
+    globalTau = globalTau / inverseSdSum;
+    globalSETau = qSqrt(globalSETau) / selectedTaus.count();
+
+    double z = globalTau / globalSETau;
+
+    double pval = calculator->GetPValueFromUDistribution(z);
+
+    double totalInverseVariance = 0.0, totalTauES = 0.0;
+    double pairs = 0, ties = 0, S = 0;
+
+    foreach(TauUModel model, selectedTaus)
+    {
+        totalInverseVariance += (1.0 / (model.SDtau * model.SDtau));
+        totalTauES += (model.TAU * (1.0 / (model.SDtau * model.SDtau)));
+
+        pairs += model.Pairs;
+        ties += model.Ties;
+        S += model.S;
+    }
+
+    TauUModel omniTau;
+    omniTau.StudyName = studyName;
+    omniTau.S = S;
+    omniTau.Pairs = pairs;
+    omniTau.Ties = ties;
+    omniTau.IsCorrected = isCorrected;
+    omniTau.TAU = totalTauES / totalInverseVariance;
+    omniTau.TAUB = (S / (pairs * 1.0 - ties * 0.5));
+    omniTau.VARs = (1.0 / totalInverseVariance);
+    omniTau.SD = qSqrt(omniTau.VARs);
+    omniTau.SDtau = qSqrt(1.0 / totalInverseVariance);
+    omniTau.Z = z;
+    omniTau.PValue = pval;
+    omniTau.CI << ((totalTauES / totalInverseVariance) - confidence * globalSETau) << ((totalTauES / totalInverseVariance) + confidence * globalSETau);
+
+    return omniTau;
 }
 
+/**
+ * @brief SheetWidget::strippedName
+ * @param fullFileName
+ * @return
+ */
+QString SheetWidget::strippedName(const QString &fullFileName)
+{
+    return QFileInfo(fullFileName).fileName();
+}
+
+/**
+ * @brief SheetWidget::convertExcelColumn
+ * @param mString
+ * @param column
+ */
 void SheetWidget::convertExcelColumn(QString &mString, int column)
 {
     int dividend = column + 1;

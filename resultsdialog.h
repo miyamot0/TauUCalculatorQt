@@ -36,7 +36,7 @@ class ResultsDialog : public QDialog
 
 public:
     explicit ResultsDialog(QWidget *parent = 0);
-    void ImportDataAndShow(bool cbBIC, bool cbAIC, bool cbRMSE, bool cbBF);
+    void ImportDataAndShow();
     void convertExcelColumn(QString &mString, int column);
     ~ResultsDialog();
 

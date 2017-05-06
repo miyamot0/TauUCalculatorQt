@@ -1,11 +1,19 @@
-#include "mainwindow.h"
 #include <QApplication>
+#include <QDir>
+
+#include "sheetwidget.h"
+
+#ifdef _WIN32
+    #include <QSettings>
+#endif
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
-    MainWindow w;
-    w.show();
+    QApplication app(argc, argv);
 
-    return a.exec();
+    SheetWidget mNewSheet;
+    mNewSheet.setWindowIcon(QPixmap(":/images/applications-other.png"));
+    mNewSheet.show();
+
+    return app.exec();
 }

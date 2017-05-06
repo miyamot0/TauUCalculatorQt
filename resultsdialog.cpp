@@ -46,10 +46,11 @@ ResultsDialog::ResultsDialog(QWidget *parent) :
     );
 }
 
-void ResultsDialog::ImportDataAndShow(bool cbBIC, bool cbAIC, bool cbRMSE, bool cbBF)
+void ResultsDialog::ImportDataAndShow()
 {
     SheetWidget *temp = qobject_cast <SheetWidget *>(parent());
 
+    /*
     QList<int> skipList;
 
     skipList << 2 << 9 << 37;
@@ -162,6 +163,7 @@ void ResultsDialog::ImportDataAndShow(bool cbBIC, bool cbAIC, bool cbRMSE, bool 
             }
         }
     }
+    */
 
     ui->tableWidget->viewport()->update();
 

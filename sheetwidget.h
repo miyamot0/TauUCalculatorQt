@@ -76,29 +76,42 @@
 #include <QWidget>
 #include <QTableWidget>
 #include <QtGui>
+#include <QtCharts>
 
 #include "sheetselectdialog.h"
-#include "modelselectiondialog.h"
 #include "resultsdialog.h"
 #include "statusdialog.h"
-#include "fitworker.h"
-#include "graphicaloutputdialog.h"
+
 #include "licensedialog.h"
 #include "creditsdialog.h"
 #include "aboutdialog.h"
+
+#include "taudialog.h"
+#include "tauumodel.h"
+#include "tauucalculations.h"
 
 class SheetWidget : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    SheetWidget(bool rInstalled, QString commandString, QWidget *parent = 0);
+    SheetWidget(QWidget *parent = 0);
 
     void convertExcelColumn(QString &mString, int column);
+    void ParseData(bool correct, double threshold, double confidence, QString figures);
+    TauUModel CombineTaus(QList<TauUModel> selectedTaus, double confidence, QString studyName);
+
     QString convert_bool(bool value);
 
     QList<QStringList> allResults;
     QList<QStringList> allCharts;
+
+    QList<TauUModel> mStudySum;
+    QList<TauUModel> tauStudyList;
+
+    QChart *chart;
+    QValueAxis *axisX;
+    QCategoryAxis *axisY;
 
 public slots:
 
@@ -109,41 +122,36 @@ public slots:
     void cut();
     void copy();
     void paste();
+    void pasteInverted();
     void clear();
 
-    void updateDelayModalWindow();
-    void updateValueModalWindow();
-    void updateMaxValueModalWindow();
+    void openRecentFile();
+
+    bool eventFilter(QObject *object, QEvent *event);
+
+    void LaunchStudySeriesFigure(QList<TauUModel> mTauList, TauUModel mOmnibus);
+    void LaunchIndividualSeriesFigure(QList<TauUModel> mTauList, TauUModel mOmnibus);
+    void LoadIndividualDataIntoChart(double y, double x1, double x2, double x3, int pairs, int lowestPairs);
+
+    void saveSettings();
 
     void clearSheet();
     void showOpenFileDialog();
     void showSaveFileDialog();
-    void showAnalysisWindow();
+
+    void showTauUWindow();
+    void showGnomeLicenseWindow();
+    void showQTLicenseWindow();
+
     void showCreditsWindow();
     void showFAQWindow();
 
-    void showDMSLicenseWindow();
-    void showRLicenseWindow();
-    void showNLSLicenseWindow();
-    void showBase64LicenseWindow();
-    void showGridextraLicenseWindow();
-    void showJsonliteLicenseWindow();
-    void showReshapeLicenseWindow();
-    void showBDSLicenseWindow();
-    void showQTLicenseWindow();
-    void showGnomeLicenseWindow();
+    bool isToolWindowShown();
 
-    bool areDelayPointsValid(QStringList &delayPoints, bool isRowData, int topDelay, int leftDelay, int bottomDelay, int rightDelay);
-    bool areDimensionsValid(bool isRowData, int dWidth, int vWidth, int dLength, int vLength);
-    bool areValuePointsValid(QStringList &valuePoints, bool isRowData, int topValue, int leftValue, int bottomValue, int rightValue, int i, double maxValue);
+    void closeEvent(QCloseEvent* event);
+    void setCurrentFile(const QString &fileName);
+    void updateRecentFileActions();
 
-    void Calculate(int topDelay, int leftDelay, int bottomDelay, int rightDelay,
-                   int topValue, int leftValue, int bottomValue, int rightValue,
-                   double maxValue, bool cbBIC, bool cbAIC, bool cbRMSE, bool cbBF, bool cbRachlin,
-                   bool modelExponential, bool modelHyperbolic, bool modelQuasiHyperbolic,
-                   bool modelMyersonGreen, bool modelRachlin, bool showCharts);
-
-    void WorkUpdate(QStringList status);
 
 private:
     QAction *newSheetAction;
@@ -156,62 +164,48 @@ private:
     QAction *pasteAction;
     QAction *clearAction;
 
+    QAction *pasteInvertedAction;
+
     QAction *openAnalysisWindow;
 
-    QAction *openLicenseDMS;
-    QAction *openLicenseR;
-    QAction *openLicenseNls;
-    QAction *openLicenseBase64;
-    QAction *openLicenseJsonlite;
-    QAction *openLicenseReshape;
-    QAction *openLicenseBDS;
-    QAction *openLicenseQt;
+    QAction *openTauUWindow;
     QAction *openLicenseGnome;
+
+    QAction *openLicenseDMS;
+    QAction *openLicenseQt;
 
     QAction *openAbout;
     QAction *openFAQ;
 
-    QAction *delayAction;
-    QAction *valueAction;
-    QAction *maxValueAction;
-
     QTableWidget *table;
 
     SheetSelectDialog *sheetSelectDialog;
-    ModelSelectionDialog *modelSelectDialog;
     StatusDialog *statusDialog;
     LicenseDialog *licenseDialog;
+
+
+    TauDialog *tauWindow;
 
     AboutDialog *aboutDialog;
     CreditsDialog *creditsDialog;
 
     ResultsDialog *resultsDialog;
-    GraphicalOutputDialog *graphicalOutputDialog;
 
-    QString commandParameter;
-    QStringList mInstallCommands;
-    bool isCoreRPresent;
+    QString settingsFile;
 
-    /**
-     * @brief Thread object which will let us manipulate the running thread
-     */
-    QThread *thread;
+    enum { MaxRecentFiles = 5 };
+    QAction *recentFileActs[MaxRecentFiles];
 
-    /**
-     * @brief Object which contains methods that should be runned in another thread
-     */
-    FitWorker *worker;
-    int orderVar;
-    int finalVar;
+    QString strippedName(const QString &fullFileName);
+    QString curFile;
 
-    QStringList mSeriesCommands;
+    QAction *separatorAct;
 
-    bool tripAIC;
-    bool tripBIC;
-    bool tripBF;
-    bool tripRMSE;
+    QStringList studyTags;
+    QStringList idTags;
+    QStringList phaseTags;
 
-    bool displayFigures;
+    TauUCalculations *calculator;
 
 };
 
