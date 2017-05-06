@@ -50,120 +50,41 @@ void ResultsDialog::ImportDataAndShow()
 {
     SheetWidget *temp = qobject_cast <SheetWidget *>(parent());
 
-    /*
-    QList<int> skipList;
-
-    skipList << 2 << 9 << 37;
-
-    if (!cbRMSE)
-    {
-        skipList << 3 << 10 << 17 << 24 << 31 << 38;
-    }
-
-    if (!cbBIC)
-    {
-        skipList << 4 << 11 << 18 << 25 << 32 << 39;
-    }
-
-    if (!cbAIC)
-    {
-        skipList << 5 << 12 << 19 << 26 << 33 << 40;
-    }
-
-    if (!cbBF)
-    {
-        skipList << 6 << 13 << 20 << 27 << 34 << 41;
-    }
-
     QStringList columnList;
 
-    columnList << "Series";
-
-    columnList << "Mazur.lnk";
     columnList << "";
-    columnList << "Mazur.RMSE";
-    columnList << "Mazur.BIC";
-    columnList << "Mazur.AIC";
-    columnList << "Mazur.BF";
-    columnList << "Mazur.prob";
-
-    columnList << "exp.lnk";
-    columnList << "";
-    columnList << "exp.RMSE";
-    columnList << "exp.BIC";
-    columnList << "exp.AIC";
-    columnList << "exp.BF";
-    columnList << "exp.prob";
-
-    columnList << "BD.beta";
-    columnList << "BD.delta";
-    columnList << "BD.RMSE";
-    columnList << "BD.BIC";
-    columnList << "BD.AIC";
-    columnList << "BD.BF";
-    columnList << "BD.prob";
-
-    columnList << "MG.lnk";
-    columnList << "MG.s";
-    columnList << "MG.RMSE";
-    columnList << "MG.BIC";
-    columnList << "MG.AIC";
-    columnList << "MG.BF";
-    columnList << "MG.prob";
-
-    columnList << "Rachlin.lnk";
-    columnList << "Rachlin.s";
-    columnList << "Rachlin.RMSE";
-    columnList << "Rachlin.BIC";
-    columnList << "Rachlin.AIC";
-    columnList << "Rachlin.BF";
-    columnList << "Rachlin.prob";
-
-    columnList << "noise.mean";
-    columnList << "";
-    columnList << "noise.RMSE";
-    columnList << "noise.BIC";
-    columnList << "noise.AIC";
-    columnList << "noise.BF";
-    columnList << "noise.prob";
-
-    columnList << "probmodel";
-    columnList << "lnED50.mostprob";
+    columnList << "Study Name";
+    columnList << "Participant Name";
+    columnList << "Baseline Correction";
+    columnList << "Kendall's S";
+    columnList << "Pairs";
+    columnList << "Ties";
+    columnList << "Kendall's Tau";
+    columnList << "VARs";
+    columnList << "Kendall's Tau-B";
+    columnList << "SD (Tau)";
+    columnList << "Z-Score";
+    columnList << "p Value";
 
     // Create columns
     for(int i=0; i<columnList.count();i++)
     {
-        if (!skipList.contains(i))
-        {
-            ui->tableWidget->insertColumn(ui->tableWidget->columnCount());
-            ui->tableWidget->setHorizontalHeaderItem(ui->tableWidget->columnCount() - 1, new QTableWidgetItem(columnList.at(i)));
-        }
+        ui->tableWidget->insertColumn(ui->tableWidget->columnCount());
+        ui->tableWidget->setHorizontalHeaderItem(ui->tableWidget->columnCount() - 1, new QTableWidgetItem(columnList.at(i)));
     }
-
-    int spacer;
 
     for(int i=0; i<temp->allResults.count(); i++)
     {
         ui->tableWidget->insertRow(ui->tableWidget->rowCount());
         QStringList mList = temp->allResults.at(i);
 
-        spacer = 0;
-
         for(int j=0; j<mList.count(); j++)
         {
-            if (!skipList.contains(j))
-            {
-                QTableWidgetItem *item = new QTableWidgetItem(mList.at(j));
-                item->setFlags(item->flags() ^ Qt::ItemIsEditable);
-                ui->tableWidget->setItem(ui->tableWidget->rowCount() - 1, j - spacer, item);
-            }
-            else
-            {
-                spacer++;
-            }
+            QTableWidgetItem *item = new QTableWidgetItem(mList.at(j));
+            item->setFlags(item->flags() ^ Qt::ItemIsEditable);
+            ui->tableWidget->setItem(ui->tableWidget->rowCount() - 1, j, item);
         }
     }
-    */
 
     ui->tableWidget->viewport()->update();
 

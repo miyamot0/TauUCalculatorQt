@@ -25,10 +25,8 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    statusdialog.cpp \
     sheetwidget.cpp \
     sheetselectdialog.cpp \
-    rworker.cpp \
     resultsdialog.cpp \
     licensedialog.cpp \
     creditsdialog.cpp \
@@ -42,19 +40,19 @@ HEADERS  += mainwindow.h \
     creditsdialog.h \
     licensedialog.h \
     resultsdialog.h \
-    rworker.h \
     sheetselectdialog.h \
     sheetwidget.h \
-    statusdialog.h \
     taudialog.h \
     tauumodel.h \
     tauucalculations.h
 
 FORMS    += mainwindow.ui \
-    statusdialog.ui \
     sheetselectdialog.ui \
     resultsdialog.ui \
     licensedialog.ui \
     creditsdialog.ui \
     aboutdialog.ui \
     taudialog.ui
+
+RESOURCES += \
+    resources.qrc

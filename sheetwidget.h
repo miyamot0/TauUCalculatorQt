@@ -80,7 +80,6 @@
 
 #include "sheetselectdialog.h"
 #include "resultsdialog.h"
-#include "statusdialog.h"
 
 #include "licensedialog.h"
 #include "creditsdialog.h"
@@ -180,7 +179,6 @@ private:
     QTableWidget *table;
 
     SheetSelectDialog *sheetSelectDialog;
-    StatusDialog *statusDialog;
     LicenseDialog *licenseDialog;
 
 

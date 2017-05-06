@@ -1039,6 +1039,11 @@ bool SheetWidget::isToolWindowShown()
  */
 void SheetWidget::ParseData(bool correct, double threshold, double confidence, QString figures)
 {
+    qDebug() << correct;
+    qDebug() << threshold;
+    qDebug() << confidence;
+    qDebug() << figures;
+
     int rowTotals = 0, subjTotals = 0, phaseTotals = 0;
     allResults.clear();
     mStudySum.clear();

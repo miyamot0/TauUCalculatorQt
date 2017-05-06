@@ -15,6 +15,11 @@ public:
     explicit TauDialog(QWidget *parent = 0);
     ~TauDialog();
 
+private slots:
+    void on_correctCondition_toggled(bool checked);
+
+    void on_pushButton_clicked();
+
 private:
     Ui::TauDialog *ui;
 };
