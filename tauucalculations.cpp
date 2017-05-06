@@ -1,23 +1,55 @@
 /**
    Copyright 2017 Shawn Gilroy
 
-   This file is part of Discounting Model Selector, Qt port.
+   This file is part of Tau-U Calculator, Qt port.
 
-   Discounting Model Selector is free software: you can redistribute it and/or modify
+   Tau-U Calculator is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, version 3.
 
-   Discounting Model Selector is distributed in the hope that it will be useful,
+   Tau-U Calculator is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with Discounting Model Selector.  If not, see http://www.gnu.org/licenses/.
+   along with Tau-U Calculator.  If not, see http://www.gnu.org/licenses/.
 
-   The Discounting Model Selector is a tool to assist researchers in behavior economics.
+   The Tau-U Calculator is a tool to assist researchers in behavior economics.
 
    Email: shawn(dot)gilroy(at)temple.edu
+
+   This file uses source code from the www.singlecaseresearch.org project to calculate
+   the Tau-U metric. The license for this work is listed below:
+
+   =======================================================================================================
+
+   Copyright 2016 Ozgur Gonen (ozgur.gonen@gmail.com), www.singlecaseresearch.org
+
+   "Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are
+   met:
+     * Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+     * Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in
+       the documentation and/or other materials provided with the
+       distribution.
+     * Neither the name of The Qt Company Ltd nor the names of its
+       contributors may be used to endorse or promote products derived
+       from this software without specific prior written permission.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+   OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 
   */
 

@@ -125,19 +125,6 @@ SheetWidget::SheetWidget(QWidget *parent) : QMainWindow(parent)
 
     resize(QDesktopWidget().availableGeometry(this).size() * 0.7);
 
-    #ifdef _WIN32
-
-    this->window()->setGeometry(
-        QStyle::alignedRect(
-            Qt::LeftToRight,
-            Qt::AlignCenter,
-            window()->size(),
-            qApp->desktop()->availableGeometry()
-        )
-    );
-
-    #endif
-
     table->installEventFilter(this);
 }
 

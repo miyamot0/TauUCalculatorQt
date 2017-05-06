@@ -23,7 +23,4 @@
 
 #include "tauumodel.h"
 
-TauUModel::TauUModel()
-{
-
-}
+TauUModel::TauUModel() { }
