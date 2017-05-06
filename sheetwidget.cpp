@@ -802,7 +802,7 @@ void SheetWidget::showQTLicenseWindow()
             runDirectory.cd("Resources");
             mFilePath = "\"" + runDirectory.path() + "/";
 
-            mFilePath = mFilePath + scriptName + "License_Qt.txt\"";
+            mFilePath = mFilePath + "License_Qt.txt\"";
 
     #endif
 
@@ -827,7 +827,7 @@ void SheetWidget::showGnomeLicenseWindow()
             runDirectory.cd("Resources");
             mFilePath = "\"" + runDirectory.path() + "/";
 
-            mFilePath = mFilePath + scriptName + "License_gnome_icons.txt\"";
+            mFilePath = mFilePath + "License_gnome_icons.txt\"";
 
     #endif
 
