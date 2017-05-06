@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>454</width>
-    <height>474</height>
+    <width>396</width>
+    <height>579</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -28,14 +28,14 @@
      <widget class="QWidget" name="scrollAreaWidgetContents">
       <property name="geometry">
        <rect>
-        <x>32</x>
+        <x>0</x>
         <y>0</y>
-        <width>352</width>
-        <height>977</height>
+        <width>359</width>
+        <height>644</height>
        </rect>
       </property>
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
@@ -61,7 +61,7 @@
             <string/>
            </property>
            <property name="pixmap">
-            <pixmap resource="spreadsheet.qrc">:/images/SNS.png</pixmap>
+            <pixmap resource="resources.qrc">:/images/SNS.png</pixmap>
            </property>
            <property name="scaledContents">
             <bool>true</bool>
@@ -104,7 +104,7 @@
           </sizepolicy>
          </property>
          <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;The program says R isn't installed?&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;The program does not give me results that look correct.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>
@@ -114,7 +114,7 @@
        <item>
         <widget class="QLabel" name="label_2">
          <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The program queries the registry (or bash) to see if the R program is installed. This will tell the program where to find your installed version of R. You need to manually install R prior to starting this program, and let R know where to keep your installed packages. Starting this program without R will pretty much prevent all functionality.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The Tau-U Calculator is designed to quickly parse through single-case data and synthesize the Tau-U metric. It requires that you structure your data according to the designated pattern so that all data is properly read and formatted.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>
@@ -124,7 +124,7 @@
        <item>
         <widget class="QLabel" name="label_4">
          <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;When first loading up, a window asks me about using a 'Personal Library'?&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;I'm not sure how to group my data together.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>
@@ -134,7 +134,7 @@
        <item>
         <widget class="QLabel" name="label_5">
          <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This is R asking where to install packages to.  If you didn't install R as an administrator, R isn't going to be able to write to the Program Files location. This isn't a major deal, if you select 'Yes' to using a personal library, R will use a folder in 'My Documents' to the same end.  Either way works, as long as one of them can be installed to.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The Tau-U Calculator first &lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;scores&lt;/span&gt; single-case data and then &lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;combines&lt;/span&gt; the data by participant, study, and overall. In a study with multiple participants, each participant would have the same &amp;quot;Study Name&amp;quot;. Each participant would have a different name (e.g., number, initial, etc.) and different baseline and intervention phases.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>
@@ -144,7 +144,7 @@
        <item>
         <widget class="QLabel" name="label_6">
          <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Items on the startup window are still colored red?&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;I'm not sure how to arrange my phases.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>
@@ -154,7 +154,7 @@
        <item>
         <widget class="QLabel" name="label_7">
          <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The program will talk to R to check that it has the packages it needs to run. The DMS will install these packages at the outset, so that future use will not need the internet for anything except to update.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The rule of thumb in this calculation is the &amp;quot;input data in the order of the phases followed&amp;quot;. For example, this could be a sample set of entries.&lt;/p&gt;&lt;p&gt;Study 1____ Participant 1______ A______ 11___ 8___  9___&lt;/p&gt;&lt;p&gt;Study 1____ Participant 1______ B______ 5____ 3___  2___&lt;/p&gt;&lt;p&gt;Study 1____ Participant 1______ A______ 8____ 13____  &lt;/p&gt;&lt;p&gt;Study 1____ Participant 1______ B______ 3____ 2___  1___&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>
@@ -164,7 +164,7 @@
        <item>
         <widget class="QLabel" name="label_8">
          <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;I get an error in the output?&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;I have more questions&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>
@@ -174,27 +174,7 @@
        <item>
         <widget class="QLabel" name="label_9">
          <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The DMS operates in a general fashion with R.  There are literally hundreds of R versions out there and depending your particular version, there may be variability in how it behaves. Generally, you should attempt to re-start the program so that it has a chance to fetch the needed packages.  If this doesn't help, email shawn(dot)gilroy(at)temple(dot)edu your specific log.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="wordWrap">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_11">
-         <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;My data is highlighted in yellow?&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="wordWrap">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_10">
-         <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The model selection procedures work in a relative fashion-- All models are compared against one another.  In this way, there isn't a 'wrong' model but simply models that are more favorable than others. Data characterized according to the 'Noise Model' are series that don't appear to fit typical models and does not appear systematic. These series are highlighted so that users may orient to the data and inspect before drawing conclusions from other model parameters.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The Tau-U calculator is in on-going development benefits from feedback. If you are unable to problem-solve the issue, you can email shawn (dot) gilroy (at) temple (dot) edu with your issue.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>
@@ -218,7 +198,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="spreadsheet.qrc"/>
+  <include location="resources.qrc"/>
  </resources>
  <connections/>
 </ui>

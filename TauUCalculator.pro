@@ -24,7 +24,6 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp \
     sheetwidget.cpp \
     sheetselectdialog.cpp \
     resultsdialog.cpp \
@@ -35,7 +34,7 @@ SOURCES += main.cpp\
     tauumodel.cpp \
     tauucalculations.cpp
 
-HEADERS  += mainwindow.h \
+HEADERS  += \
     aboutdialog.h \
     creditsdialog.h \
     licensedialog.h \
@@ -46,7 +45,7 @@ HEADERS  += mainwindow.h \
     tauumodel.h \
     tauucalculations.h
 
-FORMS    += mainwindow.ui \
+FORMS    += \
     sheetselectdialog.ui \
     resultsdialog.ui \
     licensedialog.ui \

@@ -60,9 +60,10 @@ void ResultsDialog::ImportDataAndShow()
     columnList << "Pairs";
     columnList << "Ties";
     columnList << "Kendall's Tau";
-    columnList << "VARs";
-    columnList << "Kendall's Tau-B";
+    columnList << "Lower CI";
+    columnList << "Upper CI";
     columnList << "SD (Tau)";
+    columnList << "Kendall's Tau-B";
     columnList << "Z-Score";
     columnList << "p Value";
 

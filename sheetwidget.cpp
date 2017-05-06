@@ -1039,11 +1039,6 @@ bool SheetWidget::isToolWindowShown()
  */
 void SheetWidget::ParseData(bool correct, double threshold, double confidence, QString figures)
 {
-    qDebug() << correct;
-    qDebug() << threshold;
-    qDebug() << confidence;
-    qDebug() << figures;
-
     int rowTotals = 0, subjTotals = 0, phaseTotals = 0;
     allResults.clear();
     mStudySum.clear();
@@ -1291,9 +1286,9 @@ void SheetWidget::ParseData(bool correct, double threshold, double confidence, Q
         mLineEntry.clear();
         mLineEntry << "Omnibus" << "---" << "---" << mTempBoolString << QString::number(mOmniModel.S) <<
                       QString::number(mOmniModel.Pairs) << QString::number(mOmniModel.Ties) <<
-                      QString::number(mOmniModel.TAU) << "---" << QString::number(mOmniModel.TAUB) <<
-                      QString::number(mOmniModel.SDtau) << QString::number(mOmniModel.Z) <<
-                      QString::number(mOmniModel.PValue);
+                      QString::number(mOmniModel.TAU) << QString::number(mOmniModel.CI[0]) << QString::number(mOmniModel.CI[1]) <<
+                      QString::number(mOmniModel.SDtau) << QString::number(mOmniModel.TAUB) <<
+                      QString::number(mOmniModel.Z) << QString::number(mOmniModel.PValue);
 
         allResults.append(mLineEntry);
 
@@ -1313,9 +1308,9 @@ void SheetWidget::ParseData(bool correct, double threshold, double confidence, Q
         mLineEntry.clear();
         mLineEntry << "Study" << tauModel.StudyName << "---" << mTempBoolString << QString::number(tauModel.S) <<
                       QString::number(tauModel.Pairs) << QString::number(tauModel.Ties) <<
-                      QString::number(tauModel.TAU) << "---" << QString::number(tauModel.TAUB) <<
-                      QString::number(tauModel.SDtau) << QString::number(tauModel.Z) <<
-                      QString::number(tauModel.PValue);
+                      QString::number(tauModel.TAU) << QString::number(tauModel.CI[0]) << QString::number(tauModel.CI[1]) <<
+                      QString::number(tauModel.SDtau) << QString::number(tauModel.TAUB) <<
+                      QString::number(tauModel.Z) << QString::number(tauModel.PValue);
 
         allResults.append(mLineEntry);
     }
@@ -1334,9 +1329,9 @@ void SheetWidget::ParseData(bool correct, double threshold, double confidence, Q
         mLineEntry.clear();
         mLineEntry << "Individual" << tauModel.StudyName << tauModel.ParticipantName << mTempBoolString << QString::number(tauModel.S) <<
                       QString::number(tauModel.Pairs) << QString::number(tauModel.Ties) <<
-                      QString::number(tauModel.TAU) << "---" << QString::number(tauModel.TAUB) <<
-                      QString::number(tauModel.SDtau) << QString::number(tauModel.Z) <<
-                      QString::number(tauModel.PValue);
+                      QString::number(tauModel.TAU) << QString::number(tauModel.CI[0]) << QString::number(tauModel.CI[1]) <<
+                      QString::number(tauModel.SDtau) << QString::number(tauModel.TAUB) <<
+                      QString::number(tauModel.Z) << QString::number(tauModel.PValue);
 
         allResults.append(mLineEntry);
     }
@@ -1364,7 +1359,6 @@ TauUModel SheetWidget::CombineTaus(QList<TauUModel> selectedTaus, double confide
     }
 
     // Based on Hedges' Optimal Weighting formula
-
     double globalTau = 0.0, globalSETau = 0.0;
     double inverseSd = 0.0, inverseSdSum = 0.0;
 

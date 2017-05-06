@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>540</width>
-    <height>460</height>
+    <width>648</width>
+    <height>449</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -115,7 +115,7 @@
         <item>
          <widget class="QRadioButton" name="correctNone">
           <property name="text">
-           <string>Do not correct</string>
+           <string>Do not correct any baselines</string>
           </property>
           <property name="checked">
            <bool>true</bool>
@@ -125,14 +125,14 @@
         <item>
          <widget class="QRadioButton" name="correctAll">
           <property name="text">
-           <string>Correct all baselines</string>
+           <string>Correct baseline in all cases</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QRadioButton" name="correctCondition">
           <property name="text">
-           <string>Correct if Tau exceeds value</string>
+           <string>Correct only when baseline Tau exceeds value</string>
           </property>
          </widget>
         </item>
@@ -192,7 +192,7 @@
      <item>
       <widget class="QGroupBox" name="groupBox_4">
        <property name="title">
-        <string>Settings (Help)</string>
+        <string>Note:</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_6">
         <item>
