@@ -97,4 +97,5 @@ DISTFILES += \
     COPYING \
     License_Qt.txt \
     License_gnome_icons.txt \
-    License_SCR_Calculator.txt
+    License_SCR_Calculator.txt \
+    README.md
