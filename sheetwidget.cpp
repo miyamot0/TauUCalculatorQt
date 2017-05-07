@@ -738,7 +738,7 @@ void SheetWidget::showSaveFileDialog()
 
         if (!file_name.contains(".xlsx"))
         {
-            file_name.append(".xlxs");
+            file_name.append(".xlsx");
         }
 
 #endif
